@@ -78,6 +78,9 @@ class IntToRusPropis {
     if (x == 0) {
       return 'ноль';
     }
+    if (x > 999) {
+      return x.toString();
+    }
     var r = '';
     var i, j;
 

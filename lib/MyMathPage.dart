@@ -37,7 +37,6 @@ class _MyMathPage extends State<MyMathPage> {
   int numOkLast5 = 0;
   bool showMic = false;
   int wrongCounter = 0;
-  bool breakByOk = false;
 
   final List<TaskType> _tasksTypes = TaskType.getTaskTypes();
   List<DropdownMenuItem<TaskType>> _dropDownMenuTaskTypeItems = [];
@@ -49,6 +48,11 @@ class _MyMathPage extends State<MyMathPage> {
   late SpeechToText speech;
   String lastSttWords = '';
   String lastSttError = '';
+
+  bool gotNonFinalResult = false;
+  String waitingFor = '';
+  String lastNonFinalRecognizedWords = '';
+
 
   late FlutterTts flutterTts;
   dynamic languages;
@@ -124,6 +128,10 @@ class _MyMathPage extends State<MyMathPage> {
     // await flutterTts.setVolume(volume);
     // await flutterTts.setSpeechRate(rate);
     // await flutterTts.setPitch(pitch);
+
+    if (speech.isListening) {
+      await speech.cancel();
+    }
 
     if (_newVoiceText != null) {
       if (_newVoiceText!.isNotEmpty) {
@@ -216,8 +224,7 @@ class _MyMathPage extends State<MyMathPage> {
 
     await checkPermission();
 
-    bool hasSpeech = await speech.initialize(
-        onError: errorListener, onStatus: statusListener);
+    bool hasSpeech = await speech.initialize(onError: errorListener, onStatus: statusListener);
 
     if (hasSpeech) {
       //var _localeNames = await speech.locales();
@@ -261,7 +268,11 @@ class _MyMathPage extends State<MyMathPage> {
           children: [
             const Expanded(child: Text('Реши задачу')),
             IconButton(
-              onPressed: (){ setState(() { mode = 0; }); },
+              onPressed: () async {
+                speech.cancel();
+                flutterTts.stop();
+                setState(() { mode = 0; });
+              },
               icon: const Icon(Icons.settings, size: 28,)
             )
           ],
@@ -315,7 +326,7 @@ class _MyMathPage extends State<MyMathPage> {
                           Icon(
                             Icons.mic,
                             size: 50,
-                            color: showMic ? Colors.green : Colors.transparent,
+                            color: speech.isListening ? Colors.green : Colors.transparent,
                           ),
                           const Icon(Icons.mic, size: 50, color: Colors.transparent),
                         ],
@@ -860,58 +871,56 @@ class _MyMathPage extends State<MyMathPage> {
   }
 
   void startListening() {
-    breakByOk = false;
     setState(() {
       showMic = true;
     });
     lastSttError = "";
     speech.listen(
       onResult: resultListener,
-      listenFor: const Duration(seconds: 10),
-      //pauseFor: const Duration(seconds: 10),
+      listenFor: const Duration(seconds: 5),
+      pauseFor: const Duration(seconds: 1),
       localeId: 'ru_RU', // en_US uk_UA
-      // onSoundLevelChange: soundLevelListener,
+      onSoundLevelChange: null,
       // cancelOnError: true,
-      // partialResults: true,
+      partialResults: true,
       // onDevice: false,
-      // listenMode: ListenMode.deviceDefault,
+      listenMode: ListenMode.confirmation,
       // sampleRate: 44100,
     );
   }
 
   void resultListener(SpeechRecognitionResult result) async {
-    if (isIOS) {
-      if (breakByOk) {
-        print('\nreturn from resultListener because breakByOk\n');
-        return;
-      }
-    }
-    print('\n got result $result \n');
     String recognizedWords = result.recognizedWords.toString();
     if (result.finalResult) {
-      if (isIOS) {
-        if (breakByOk) {
-          print('\nreturn from resultListener because breakByOk\n');
-          return;
-        }
-        await speech.stop();
-      }
+      print('\n got final result $result \n');
       setState(() {
         lastSttWords = recognizedWords;
         showMic = false;
       });
       analyzeResults(recognizedWords, true);
     } else {
-      setState(() {
-        //lastSttWords = 'fr '+result.finalResult.toString() + ' conf '+result.confidence.toString()+' altL '+result.alternates.length.toString();
-        analyzeResults(recognizedWords, false);
-        if (result.alternates.isNotEmpty) {
-          setState(() {
-            lastSttWords = result.alternates[0].recognizedWords;
-          });
-        }
-      });
+      if (result.alternates.isNotEmpty) {
+        setState(() {
+          lastSttWords = result.alternates[0].recognizedWords;
+        });
+      }
+      print('\n got non-final result $result \n');
+      lastNonFinalRecognizedWords = recognizedWords;
+      if (waitingFor != _curTaskMsgTxt) {
+        waitingFor = _curTaskMsgTxt;
+        Future.delayed(const Duration(seconds: 3), _checkIfLongPause);
+      }
     }
+  }
+
+  _checkIfLongPause() async {
+    print('_checkIfLongPause with speech state ${speech.isListening} \nwaitingFor $waitingFor \n_curTaskMsgTxt $_curTaskMsgTxt');
+    if (speech.isListening && (waitingFor == _curTaskMsgTxt)) {
+      print('break to listen');
+      await speech.cancel();
+      analyzeResults(lastNonFinalRecognizedWords, true);
+    }
+    waitingFor = '';
   }
 
   bool _isNumeric(String str) {
@@ -926,20 +935,24 @@ class _MyMathPage extends State<MyMathPage> {
     var wordsList = recognizedWords.split(' ');
     int answerRes = -1;
     for (var i = 0; i < wordsList.length; i++) {
-      String word = wordsList[i];
-      word = word.replaceAll(':00', '');
-      word = word.replaceAll('один', '1');
-      word = word.replaceAll('два', '2');
-      word = word.replaceAll('три', '3');
+      String word = wordsList[i].toLowerCase();
+      print('analyze word $word'); // Восемь
       word = word.replaceAll('четыре', '4');
-      word = word.replaceAll('пять', '5');
-      word = word.replaceAll('шесть', '6');
-      word = word.replaceAll('семь', '7');
       word = word.replaceAll('восемь', '8');
       word = word.replaceAll('девять', '9');
       word = word.replaceAll('десять', '10');
+      word = word.replaceAll('шесть', '6');
+      word = word.replaceAll('пять', '5');
+      word = word.replaceAll('семь', '7');
+      word = word.replaceAll('один', '1');
+      word = word.replaceAll('два', '2');
+      word = word.replaceAll('три', '3');
+      word = word.replaceAll(':00', '');
+      print('after replace $word');
       if (_isNumeric(word)) {
+        print('isNumeric');
         answerRes = int.parse(word);
+        print('answerRes $answerRes');
         break;
       }
     }
@@ -955,8 +968,6 @@ class _MyMathPage extends State<MyMathPage> {
     if (answerRes == expectedRes) {
       if (!finalMode) {
         await speech.stop();
-        breakByOk = true;
-        print('set breakByOk');
       }
       numOkLast5++;
       setState(() {
@@ -995,6 +1006,7 @@ class _MyMathPage extends State<MyMathPage> {
 
   void displaySttDialog() async {
     await flutterTts.stop();
+    await speech.stop();
     showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
