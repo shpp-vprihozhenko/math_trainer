@@ -130,6 +130,7 @@ class _MyMathPage extends State<MyMathPage> {
     // await flutterTts.setPitch(pitch);
 
     if (speech.isListening) {
+      print('cancel listening');
       await speech.cancel();
     }
 
@@ -141,34 +142,17 @@ class _MyMathPage extends State<MyMathPage> {
     }
   }
 
-  Future _setAwaitOptions() async {
-    await flutterTts.awaitSpeakCompletion(true);
-  }
-
   initTTS() async {
     flutterTts = FlutterTts();
 
-    _setAwaitOptions();
+    await flutterTts.awaitSpeakCompletion(true);
 
     flutterTts.setStartHandler(() {
-      setState(() {
-        print("Playing");
-        ttsState = TtsState.playing;
-      });
+      print("Playing");
     });
 
     flutterTts.setCompletionHandler(() {
-      setState(() {
-        print("Complete");
-        ttsState = TtsState.stopped;
-      });
-    });
-
-    flutterTts.setCancelHandler(() {
-      setState(() {
-        print("Cancel");
-        ttsState = TtsState.stopped;
-      });
+      print("Complete");
     });
 
     if (isIOS) {
@@ -227,6 +211,7 @@ class _MyMathPage extends State<MyMathPage> {
     bool hasSpeech = await speech.initialize(onError: errorListener, onStatus: statusListener);
 
     if (hasSpeech) {
+      print('has speech');
       //var _localeNames = await speech.locales();
       //_localeNames.forEach((element) => print(element.localeId));
       var systemLocale = await speech.systemLocale();
@@ -236,8 +221,6 @@ class _MyMathPage extends State<MyMathPage> {
     if (!hasSpeech) {
       return;
     }
-
-    initTTS();
   }
 
   void errorListener(SpeechRecognitionError error) {
@@ -246,7 +229,7 @@ class _MyMathPage extends State<MyMathPage> {
       showMic = false;
       lastSttWords = '-';
     });
-    displaySttDialog();
+    //displaySttDialog();
   }
 
   void statusListener(String status) {
@@ -259,284 +242,6 @@ class _MyMathPage extends State<MyMathPage> {
     } else {
       showAlertPage("Received strange Stt status: $status, listening: ${speech.isListening}");
     }
-  }
-
-  Widget taskPageW(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Expanded(child: Text('Реши задачу')),
-            IconButton(
-              onPressed: () async {
-                speech.cancel();
-                flutterTts.stop();
-                setState(() { mode = 0; });
-              },
-              icon: const Icon(Icons.settings, size: 28,)
-            )
-          ],
-        )
-      ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Center(
-                child: Text(
-                  _curTaskMsg,
-                  style: const TextStyle(fontSize: 22.0),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: (){
-                  if (speech.isListening) {
-                    speech.stop();
-                    showMic = false;
-                    setState((){});
-                  } else {
-                    startListening();
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.all(Radius.circular(50)),
-                    color: showMic? Colors.green : Colors.black12,
-                  ),
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(50)),
-                      color: Colors.white,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child:
-                      speech.isListening?
-                        BlinkWidget(
-                        children: <Widget>[
-                          Icon(
-                            Icons.mic,
-                            size: 50,
-                            color: speech.isListening ? Colors.green : Colors.transparent,
-                          ),
-                          const Icon(Icons.mic, size: 50, color: Colors.transparent),
-                        ],
-                      )
-                      :
-                        const Icon(Icons.mic, size: 50, color: Colors.grey)
-                      ,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 15,),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('Последний ответ: $lastSttWords',
-                        style: const TextStyle(fontSize: 20.0), textAlign: TextAlign.center,),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10,),
-              Text('Всего ответов: $numTotalAnswer',
-                  style: const TextStyle(fontSize: 20.0)),
-              const SizedBox(height: 10,),
-              Text('Правильных ответов: $numOkAnswer',
-                  style: const TextStyle(fontSize: 20.0)),
-              const SizedBox(height: 10,),
-              Text('Неправильных ответов: $numWrongAnswer',
-                  style: const TextStyle(fontSize: 20.0)),
-            ],
-          ),
-          const SizedBox(height: 20,),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              ClipOval(
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  color: Colors.blue,
-                  child: IconButton(
-                    onPressed: (){ repeatTask(); },
-                    icon: const Icon(Icons.repeat, size: 33, color: Colors.white,),
-                  ),
-                ),
-              ),
-              ClipOval(
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  color: Colors.blue,
-                  child: IconButton(
-                    onPressed: (){ _mainMathLoop(); },
-                    icon: const Icon(Icons.arrow_forward_ios, size: 35, color: Colors.white,),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20,),
-        ],
-      ),
-    );
-  }
-
-  Widget startMathMenuW(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Row(
-        children: [
-          const Expanded(child: Text('Математика')),
-          IconButton(
-            onPressed: (){
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const About())
-              );
-            },
-            icon: const Icon(Icons.help, size: 30,)
-          ),
-        ],
-      )),
-      body: Center(
-        child: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: const AssetImage('assets/images/math.png'),
-              fit: BoxFit.fill,
-              colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.2), BlendMode.dstATop),
-            ),
-          ),
-          child: ListView(
-            shrinkWrap: true,
-            children: <Widget>[
-              const SizedBox(height: 30,),
-              Row(
-                children: const [
-                  SizedBox(width: 15,),
-                  Expanded(child: Text('Когда будешь готов - нажми', textScaleFactor: 3, textAlign: TextAlign.center)),
-                  SizedBox(width: 15,),
-                ],
-              ),
-              const SizedBox(height: 30,),
-              Container(
-                width: double.infinity, height: 100,
-                child: Center(
-                  child: FlatButton(
-                    color: Colors.blue,
-                    textColor: Colors.white,
-                    disabledColor: Colors.grey,
-                    disabledTextColor: Colors.black,
-                    padding: const EdgeInsets.only(
-                        left: 40, right: 40, top: 20, bottom: 20),
-                    splashColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    onPressed: () {
-                      setState(() {
-                        mode = 1;
-                      });
-                      _startMathLoop();
-                    },
-                    child: const Text(
-                      "СТАРТ",
-                      style: TextStyle(fontSize: 30.0),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30,),
-              Container(
-                padding: const EdgeInsets.all(15),
-                color: Colors.lightBlue[100],
-                child: Column(children: <Widget>[
-                  const Text('настройки Тренера:',
-                      textScaleFactor: 1.4, textAlign: TextAlign.center),
-                  const SizedBox(height: 10,),
-                  Container(
-                    color: Colors.white60,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        DropdownButton(
-                            value: _selectedTaskType,
-                            items: _dropDownMenuTaskTypeItems,
-                            onChanged: onChangeDropdownItem
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextField(
-                      controller: textEditController
-                        ..text = maxNum.toString(),
-                      autocorrect: true,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                          prefix: Text('Максимум числа: '),
-                          //labelStyle: ,
-                          hintText: 'Максимум:'),
-                      onSubmitted: (String value) async {
-                        if (_isNumeric(value)) {
-                          setState(() {
-                            maxNum = int.parse(value);
-                          });
-                        }
-                      }),
-                  Row(
-                    children: <Widget>[
-                      const Text('Динамическая сложность:', textScaleFactor: 1.1),
-                      Switch(
-                          value: dynamicDifficult,
-                          onChanged: (newVal) {
-                            setState(() {
-                              dynamicDifficult = newVal;
-                            });
-                          })
-                    ],
-                  ),
-                  TextField(
-                      controller: textEditControllerForMult
-                        ..text = multiplierForTable.toString(),
-                      autocorrect: true,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                          prefix: Text('Множитель (умножение): '),
-                          hintText: 'Множитель для таблицы умножения:'),
-                      onSubmitted: (String value) async {
-                        if (_isNumeric(value)) {
-                          setState(() {
-                            multiplierForTable = int.parse(value);
-                          });
-                        }
-                      }),
-                  const SizedBox(height: 12,),
-                  Text('Скорость речи: ${(rate*100).toStringAsFixed(0)}% '),
-                  Slider(value: rate,
-                      onChanged: (newVal) {
-                        rate = newVal;
-                        setState((){});
-                      }
-                  ),
-                ]),
-              )
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   _formCurTask(int startTask, int finTask) {
@@ -857,7 +562,7 @@ class _MyMathPage extends State<MyMathPage> {
 
     if (speech.isListening) {
       print('cancel speech listening');
-      await speech.cancel();
+      await speech.stop();
     }
     await flutterTts.stop();
     await _speak(_curTaskMsgTxt);
@@ -870,23 +575,31 @@ class _MyMathPage extends State<MyMathPage> {
     startListening();
   }
 
-  void startListening() {
+  void startListening() async {
+    if (speech.isListening) {
+      print('stop speech into startListening');
+      await speech.stop();
+    }
     setState(() {
       showMic = true;
     });
     lastSttError = "";
     speech.listen(
       onResult: resultListener,
-      listenFor: const Duration(seconds: 5),
-      pauseFor: const Duration(seconds: 1),
+      listenFor: const Duration(seconds: 60),
+      pauseFor: Duration(seconds: Platform.isIOS? 5 : 3),
       localeId: 'ru_RU', // en_US uk_UA
-      onSoundLevelChange: null,
+      //onSoundLevelChange: _levelChange,
       // cancelOnError: true,
-      partialResults: true,
-      // onDevice: false,
-      listenMode: ListenMode.confirmation,
+      partialResults: false,
+      onDevice: false,
+      listenMode: ListenMode.deviceDefault,
       // sampleRate: 44100,
     );
+  }
+
+  _levelChange(level) {
+    //
   }
 
   void resultListener(SpeechRecognitionResult result) async {
@@ -908,7 +621,7 @@ class _MyMathPage extends State<MyMathPage> {
       lastNonFinalRecognizedWords = recognizedWords;
       if (waitingFor != _curTaskMsgTxt) {
         waitingFor = _curTaskMsgTxt;
-        Future.delayed(const Duration(seconds: 3), _checkIfLongPause);
+        //Future.delayed(const Duration(seconds: 3), _checkIfLongPause);
       }
     }
   }
@@ -917,7 +630,7 @@ class _MyMathPage extends State<MyMathPage> {
     print('_checkIfLongPause with speech state ${speech.isListening} \nwaitingFor $waitingFor \n_curTaskMsgTxt $_curTaskMsgTxt');
     if (speech.isListening && (waitingFor == _curTaskMsgTxt)) {
       print('break to listen');
-      await speech.cancel();
+      await speech.stop();
       analyzeResults(lastNonFinalRecognizedWords, true);
     }
     waitingFor = '';
@@ -944,6 +657,7 @@ class _MyMathPage extends State<MyMathPage> {
       word = word.replaceAll('шесть', '6');
       word = word.replaceAll('пять', '5');
       word = word.replaceAll('семь', '7');
+      word = word.replaceAll('ноль', '0');
       word = word.replaceAll('один', '1');
       word = word.replaceAll('два', '2');
       word = word.replaceAll('три', '3');
@@ -1007,7 +721,7 @@ class _MyMathPage extends State<MyMathPage> {
   void displaySttDialog() async {
     await flutterTts.stop();
     await speech.stop();
-    showDialog(
+    var result  = await showDialog(
       context: context,
       builder: (BuildContext context) => AlertDialog(
         content: Column(
@@ -1027,11 +741,10 @@ class _MyMathPage extends State<MyMathPage> {
                     color: Colors.green,
                     borderRadius: BorderRadius.all(Radius.circular(50))
                   ),
-                  child: FlatButton(
+                  child: ElevatedButton(
                       child: const Text('Да', style: TextStyle(color: Colors.white),),
                       onPressed: () {
-                        startListening();
-                        Navigator.pop(context);
+                        Navigator.pop(context, true);
                       }),
                 ),
                 const SizedBox(width: 40,),
@@ -1041,7 +754,7 @@ class _MyMathPage extends State<MyMathPage> {
                       color: Colors.black26,
                       borderRadius: BorderRadius.all(Radius.circular(50))
                   ),
-                  child: FlatButton(
+                  child: ElevatedButton(
                       child: const Text('Нет', style: TextStyle(color: Colors.white),),
                       onPressed: () {
                         Navigator.pop(context);
@@ -1053,6 +766,10 @@ class _MyMathPage extends State<MyMathPage> {
         ),
       ),
     );
+    if (result == null) {
+      return;
+    }
+    startListening();
   }
 
   showAlertPage(String msg) {
@@ -1084,19 +801,280 @@ class _MyMathPage extends State<MyMathPage> {
   }
 
   Widget myFlatBtn(String s, cb) {
-    return FlatButton(
-      color: Colors.blue,
-      textColor: Colors.white,
-      disabledColor: Colors.grey,
-      disabledTextColor: Colors.black,
-      padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 10),
-      splashColor: Colors.white,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10)),
+    return ElevatedButton(
       onPressed: () {
         cb();
       },
       child: Text(s, style: const TextStyle(fontSize: 16.0),),
+    );
+  }
+
+  Widget taskPageW(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+          title: Row(
+            children: [
+              const Expanded(child: Text('Реши задачу')),
+              IconButton(
+                  onPressed: () async {
+                    speech.stop();
+                    flutterTts.stop();
+                    setState(() { mode = 0; });
+                  },
+                  icon: const Icon(Icons.settings, size: 28,)
+              )
+            ],
+          )
+      ),
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Center(
+                child: Text(
+                  _curTaskMsg,
+                  style: const TextStyle(fontSize: 22.0),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: (){
+                  if (speech.isListening) {
+                    speech.stop();
+                    showMic = false;
+                    setState((){});
+                  } else {
+                    startListening();
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.all(Radius.circular(50)),
+                    color: showMic? Colors.green : Colors.black12,
+                  ),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(50)),
+                      color: Colors.white,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child:
+                      speech.isListening?
+                      BlinkWidget(
+                        children: <Widget>[
+                          Icon(
+                            Icons.mic,
+                            size: 50,
+                            color: speech.isListening ? Colors.green : Colors.transparent,
+                          ),
+                          const Icon(Icons.mic, size: 50, color: Colors.transparent),
+                        ],
+                      )
+                          :
+                      const Icon(Icons.mic, size: 50, color: Colors.grey)
+                      ,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15,),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Последний ответ: $lastSttWords',
+                      style: const TextStyle(fontSize: 20.0), textAlign: TextAlign.center,),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10,),
+              Text('Всего ответов: $numTotalAnswer',
+                  style: const TextStyle(fontSize: 20.0)),
+              const SizedBox(height: 10,),
+              Text('Правильных ответов: $numOkAnswer',
+                  style: const TextStyle(fontSize: 20.0)),
+              const SizedBox(height: 10,),
+              Text('Неправильных ответов: $numWrongAnswer',
+                  style: const TextStyle(fontSize: 20.0)),
+            ],
+          ),
+          const SizedBox(height: 20,),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              ClipOval(
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  color: Colors.blue,
+                  child: IconButton(
+                    onPressed: (){ repeatTask(); },
+                    icon: const Icon(Icons.repeat, size: 33, color: Colors.white,),
+                  ),
+                ),
+              ),
+              ClipOval(
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  color: Colors.blue,
+                  child: IconButton(
+                    onPressed: (){ _mainMathLoop(); },
+                    icon: const Icon(Icons.arrow_forward_ios, size: 35, color: Colors.white,),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20,),
+        ],
+      ),
+    );
+  }
+
+  Widget startMathMenuW(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Row(
+        children: [
+          const Expanded(child: Text('Математика')),
+          IconButton(
+              onPressed: (){
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => const About())
+                );
+              },
+              icon: const Icon(Icons.help, size: 30,)
+          ),
+        ],
+      )),
+      body: Center(
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: const AssetImage('assets/images/math.png'),
+              fit: BoxFit.fill,
+              colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.2), BlendMode.dstATop),
+            ),
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: <Widget>[
+              const SizedBox(height: 30,),
+              Row(
+                children: const [
+                  SizedBox(width: 15,),
+                  Expanded(child: Text('Когда будешь готов - нажми', textScaleFactor: 3, textAlign: TextAlign.center)),
+                  SizedBox(width: 15,),
+                ],
+              ),
+              const SizedBox(height: 30,),
+              Container(
+                width: double.infinity, height: 100,
+                child: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        mode = 1;
+                      });
+                      _startMathLoop();
+                    },
+                    child: const Text(
+                      "СТАРТ",
+                      style: TextStyle(fontSize: 30.0),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30,),
+              Container(
+                padding: const EdgeInsets.all(15),
+                color: Colors.lightBlue[100],
+                child: Column(children: <Widget>[
+                  const Text('настройки Тренера:',
+                      textScaleFactor: 1.4, textAlign: TextAlign.center),
+                  const SizedBox(height: 10,),
+                  Container(
+                    color: Colors.white60,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        DropdownButton(
+                            value: _selectedTaskType,
+                            items: _dropDownMenuTaskTypeItems,
+                            onChanged: onChangeDropdownItem
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextField(
+                      controller: textEditController
+                        ..text = maxNum.toString(),
+                      autocorrect: true,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                          prefix: Text('Максимум числа: '),
+                          //labelStyle: ,
+                          hintText: 'Максимум:'),
+                      onSubmitted: (String value) async {
+                        if (_isNumeric(value)) {
+                          setState(() {
+                            maxNum = int.parse(value);
+                          });
+                        }
+                      }),
+                  Row(
+                    children: <Widget>[
+                      const Text('Динамическая сложность:', textScaleFactor: 1.1),
+                      Switch(
+                          value: dynamicDifficult,
+                          onChanged: (newVal) {
+                            setState(() {
+                              dynamicDifficult = newVal;
+                            });
+                          })
+                    ],
+                  ),
+                  TextField(
+                      controller: textEditControllerForMult
+                        ..text = multiplierForTable.toString(),
+                      autocorrect: true,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                          prefix: Text('Множитель (умножение): '),
+                          hintText: 'Множитель для таблицы умножения:'),
+                      onSubmitted: (String value) async {
+                        if (_isNumeric(value)) {
+                          setState(() {
+                            multiplierForTable = int.parse(value);
+                          });
+                        }
+                      }),
+                  const SizedBox(height: 12,),
+                  Text('Скорость речи: ${(rate*100).toStringAsFixed(0)}% '),
+                  Slider(value: rate,
+                      onChanged: (newVal) {
+                        rate = newVal;
+                        setState((){});
+                      }
+                  ),
+                ]),
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 

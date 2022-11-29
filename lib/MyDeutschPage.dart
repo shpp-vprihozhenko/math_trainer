@@ -190,13 +190,13 @@ class _MyDeutschPage extends State<MyDeutschPage> {
         title: new Text("Я тебя не понял..."),
         content: new Text("Повторим?"),
         actions: [
-          FlatButton(
+          ElevatedButton(
               child: Text('Да'),
               onPressed: () {
                 startListening();
                 Navigator.pop(context, true);
               }),
-          FlatButton(
+          ElevatedButton(
               child: Text('Нет'),
               onPressed: () {
                 Navigator.pop(context, true);
@@ -225,16 +225,7 @@ class _MyDeutschPage extends State<MyDeutschPage> {
                   SizedBox(
                     height: 20,
                   ),
-                  FlatButton(
-                    color: Colors.blue,
-                    textColor: Colors.white,
-                    disabledColor: Colors.grey,
-                    disabledTextColor: Colors.black,
-                    padding: EdgeInsets.only(
-                        left: 40, right: 40, top: 20, bottom: 20),
-                    splashColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                  ElevatedButton(
                     child: Text(
                       'СТАРТ',
                       textScaleFactor: 2,
@@ -333,47 +324,20 @@ class _MyDeutschPage extends State<MyDeutschPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: <Widget>[
-                  FlatButton(
-                    color: Colors.blue,
-                    textColor: Colors.white,
-                    disabledColor: Colors.grey,
-                    disabledTextColor: Colors.black,
-                    padding: EdgeInsets.only(
-                        left: 10, right: 10, top: 10, bottom: 10),
-                    splashColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                  ElevatedButton(
                     child: Text('Назад'),
                     onPressed: () {
                       curPos = lastCurPos;
                       mainDLoop(false);
                     },
                   ),
-                  FlatButton(
-                    color: Colors.blue,
-                    textColor: Colors.white,
-                    disabledColor: Colors.grey,
-                    disabledTextColor: Colors.black,
-                    padding: EdgeInsets.only(
-                        left: 10, right: 10, top: 10, bottom: 10),
-                    splashColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                  ElevatedButton(
                     child: Text('Повторить'),
                     onPressed: () {
                       mainDLoop(false);
                     },
                   ),
-                  FlatButton(
-                    color: Colors.blue,
-                    textColor: Colors.white,
-                    disabledColor: Colors.grey,
-                    disabledTextColor: Colors.black,
-                    padding: EdgeInsets.only(
-                        left: 10, right: 10, top: 10, bottom: 10),
-                    splashColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                  ElevatedButton(
                     child: Text('Следующий'),
                     onPressed: () {
                       mainDLoop(true);

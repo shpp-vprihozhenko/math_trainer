@@ -1,4 +1,8 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'IntToRusPropis.dart';
 
 class TaskType {
   String id;
@@ -44,6 +48,17 @@ String getTry () {
   return tries[rng.nextInt(tries.length)];
 }
 
+showAlertPage(context, String msg) async {
+  await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          content: Text(msg),
+        );
+      }
+  );
+}
+
 /*
 тест
 плеймаркет + аппстор
@@ -55,3 +70,35 @@ en-GB, he-IL, nl-BE, hu-HU, ar-SA, nl-NL, zh-TW, de-DE, pt-BR, ja-JP, pt-PT,
 tr-TR, no-NO, en-IE, da-DK, hi-IN, es-ES, cs-CZ, ro-RO, en-AU, fi-FI, en-ZA,
 pl-PL, sv-SE, en-US, ru-RU, zh-HK
 */
+
+GlobalKey recContKey = GlobalKey();
+
+IntToRusPropis itp = IntToRusPropis();
+double glTtsVolume = 1, glTtsRate=0.5;
+String glTTSlang = 'ru-RU';
+
+final glTts = FlutterTts();
+
+Future initGlTTS() async {
+  await glTts.setVolume(glTtsVolume);
+  await glTts.setSpeechRate(glTtsRate);
+  await glTts.awaitSpeakCompletion(true);
+  await glTts.setLanguage(glTTSlang);
+}
+
+Future speak(String _text) async{
+  try {
+    await glTts.stop();
+  } catch(e){}
+  await glTts.speak(_text);
+}
+
+Future stopSpeak() async{
+  await glTts.stop();
+}
+
+printD(String text) {
+  if (kDebugMode) {
+    print(text);
+  }
+}
