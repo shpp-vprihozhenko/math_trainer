@@ -27,7 +27,7 @@ class TaskType {
   }
 }
 
-List <String> oks = ['Окей!', "Супер", "Молодец", "Так держать!", "Умница"];
+List <String> oks = ['Окей!', "Супер", "Молодец", "Так держать!", "Умница", "Великолепно", "Да!", "Верно!", ];
 List <String> wrongs = ["Неправильно. Будет", "Увы. Правильный ответ", "Нет. Правильный ответ",
   "Не совсем. Будет"];
 List <String> tries = ['А если подумать?', "Подумай ещё", "Попробуй ещё раз",
@@ -74,7 +74,7 @@ pl-PL, sv-SE, en-US, ru-RU, zh-HK
 GlobalKey recContKey = GlobalKey();
 
 IntToRusPropis itp = IntToRusPropis();
-double glTtsVolume = 1, glTtsRate=0.5;
+double glTtsVolume = 1, glTtsRate=0.4;
 String glTTSlang = 'ru-RU';
 
 final glTts = FlutterTts();

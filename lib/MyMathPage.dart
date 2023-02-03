@@ -62,6 +62,9 @@ class _MyMathPage extends State<MyMathPage> {
   double rate = 0.5;
 
   TtsState ttsState = TtsState.stopped;
+
+  bool isProcessed = false;
+
   get isPlaying => ttsState == TtsState.playing;
   get isStopped => ttsState == TtsState.stopped;
   get isPaused => ttsState == TtsState.paused;
@@ -586,31 +589,31 @@ class _MyMathPage extends State<MyMathPage> {
     lastSttError = "";
     speech.listen(
       onResult: resultListener,
-      listenFor: const Duration(seconds: 60),
-      pauseFor: Duration(seconds: Platform.isIOS? 5 : 3),
+      listenFor: const Duration(seconds: 20),
+      pauseFor: Duration(seconds: 4),
       localeId: 'ru_RU', // en_US uk_UA
       //onSoundLevelChange: _levelChange,
       // cancelOnError: true,
-      partialResults: false,
+      partialResults: true,
       onDevice: false,
       listenMode: ListenMode.deviceDefault,
       // sampleRate: 44100,
     );
   }
 
-  _levelChange(level) {
-    //
-  }
-
   void resultListener(SpeechRecognitionResult result) async {
+    if (!result.finalResult && isProcessed) {
+      return;
+    }
     String recognizedWords = result.recognizedWords.toString();
+    analyzeResults(recognizedWords, result.finalResult);
+
     if (result.finalResult) {
       print('\n got final result $result \n');
       setState(() {
         lastSttWords = recognizedWords;
         showMic = false;
       });
-      analyzeResults(recognizedWords, true);
     } else {
       if (result.alternates.isNotEmpty) {
         setState(() {
@@ -626,16 +629,6 @@ class _MyMathPage extends State<MyMathPage> {
     }
   }
 
-  _checkIfLongPause() async {
-    print('_checkIfLongPause with speech state ${speech.isListening} \nwaitingFor $waitingFor \n_curTaskMsgTxt $_curTaskMsgTxt');
-    if (speech.isListening && (waitingFor == _curTaskMsgTxt)) {
-      print('break to listen');
-      await speech.stop();
-      analyzeResults(lastNonFinalRecognizedWords, true);
-    }
-    waitingFor = '';
-  }
-
   bool _isNumeric(String str) {
     if (str == '') {
       return false;
@@ -643,8 +636,8 @@ class _MyMathPage extends State<MyMathPage> {
     return double.tryParse(str) != null;
   }
 
-  analyzeResults(String recognizedWords, bool finalMode) async {
-    print('analyzing $finalMode');
+  analyzeResults(String recognizedWords, bool finalResult) async {
+    print('analyzing $finalResult');
     var wordsList = recognizedWords.split(' ');
     int answerRes = -1;
     for (var i = 0; i < wordsList.length; i++) {
@@ -672,7 +665,7 @@ class _MyMathPage extends State<MyMathPage> {
     }
     print('res answ $answerRes');
     if (answerRes == -1) {
-      if (!finalMode) {
+      if (!finalResult) {
         return;
       }
       await _speak('Повтори пожалуйста.');
@@ -680,8 +673,9 @@ class _MyMathPage extends State<MyMathPage> {
       return;
     }
     if (answerRes == expectedRes) {
-      if (!finalMode) {
+      if (!finalResult) {
         await speech.stop();
+        setState(() {});
       }
       numOkLast5++;
       setState(() {
@@ -695,7 +689,7 @@ class _MyMathPage extends State<MyMathPage> {
       await _speak(getOk());
       wrongCounter = 0;
     } else {
-      if (!finalMode) {
+      if (!finalResult) {
         return;
       }
       wrongCounter++;
@@ -947,7 +941,7 @@ class _MyMathPage extends State<MyMathPage> {
     return Scaffold(
       appBar: AppBar(title: Row(
         children: [
-          const Expanded(child: Text('Математика')),
+          const Expanded(child: Text('Ответь решение')),
           IconButton(
               onPressed: (){
                 Navigator.push(context,

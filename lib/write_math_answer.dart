@@ -8,7 +8,9 @@ import 'about.dart';
 import 'globals.dart';
 
 class WriteMathAnswer extends StatefulWidget {
-  const WriteMathAnswer({Key? key}) : super(key: key);
+  final mode;
+
+  const WriteMathAnswer({Key? key, this.mode}) : super(key: key);
 
   @override
   State<WriteMathAnswer> createState() => _WriteMathAnswerState();
@@ -66,12 +68,31 @@ class _WriteMathAnswerState extends State<WriteMathAnswer> {
   }
 
   _formTask(){
+    if (widget.mode == 1) {
+      maxNum = 10;
+    } else  if (widget.mode == 2) {
+      maxNum = 20;
+    }
     userAnswer = -1; attempt = 0;
     do {
       num1 = rng.nextInt(maxNum);
       num2 = rng.nextInt(maxNum);
       num3 = rng.nextInt(maxNum);
+      if (widget.mode <= 3) {
+        num3 = 0;
+      }
       deal1 = rng.nextInt(2)==0? '+':'-';
+      if (widget.mode == 4) {
+        if (deal1 == '-') {
+          if (num1 < num2) {
+            continue;
+          }
+        } else {
+          if (num1 + num2 > maxNum) {
+            continue;
+          }
+        }
+      }
       deal2 = rng.nextInt(2)==0? '+':'-';
       result = num1 + (deal1=='+'?1:-1)*num2 + (deal2=='+'?1:-1)*num3;
       if (result >=0 && result <= maxNum) {
@@ -80,6 +101,9 @@ class _WriteMathAnswerState extends State<WriteMathAnswer> {
     } while (true);
     setState(() {});
     String s = 'Сколько будет $num1 ${deal1=='+'?'+':'минус'}  ${itp.intToPropis(num2)} ${deal2=='+'?'+':'минус'} ${itp.intToPropis(num3)}';
+    if (widget.mode <= 3) {
+      s = 'Сколько будет $num1 ${deal1=='+'?'+':'минус'}  ${itp.intToPropis(num2)}';
+    }
     speak(s);
   }
 
@@ -88,9 +112,9 @@ class _WriteMathAnswerState extends State<WriteMathAnswer> {
     userAnswer = recResult;
     setState(() {});
     if (userAnswer == result) {
-      await speak('Да!');
+      //await speak('Правильно!');
       await speak(oks[rng.nextInt(oks.length)]);
-      await speak('Решаем дальше');
+      //await speak('Решаем дальше');
       _formTask();
     } else {
       await speak('Нет!');
@@ -108,7 +132,19 @@ class _WriteMathAnswerState extends State<WriteMathAnswer> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Напиши решение'),),
+      appBar: AppBar(title: Row(
+        children: [
+          Expanded(child: Text('Напиши решение', textAlign: TextAlign.center,)),
+          IconButton(
+              onPressed: (){
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => const About())
+                );
+              },
+              icon: const Icon(Icons.help, size: 30,)
+          ),
+        ],
+      ),),
       body: Column(
         children: [
           Column(
@@ -119,6 +155,9 @@ class _WriteMathAnswerState extends State<WriteMathAnswer> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  widget.mode < 4?
+                  Text('$num1 $deal1 $num2 =', textScaleFactor: 2.5)
+                  :
                   Text('$num1 $deal1 $num2 $deal2 $num3 =', textScaleFactor: 2.5),
                   const SizedBox(width: 12,),
                   Text('${userAnswer>-1? userAnswer:'?'}', textScaleFactor: 2.5,
@@ -212,13 +251,14 @@ class _DigitalInkRecognitionPageState extends State<DigitalInkRecognitionPage> {
       final candidates = await _digitalInkRecognizer.recognize(_ink);
       String answer = '';
       answer = candidates.first.text;
+      answer = answer.replaceAll('g', '9').replaceAll('o', '0');
       setState(() {});
       print('res $answer');
       int intAnswer = -1;
       try {
         intAnswer = int.parse(answer);
       } catch(e) {};
-      print('got intAnswer');
+      print('got intAnswer $intAnswer');
       if (intAnswer > -1) {
         widget.CBonRecognize(intAnswer);
       } else {
